@@ -1,3 +1,6 @@
+import numpy as np
+import random
+
 class Sudoku:
 
     dec_to_bin={1:1,2:2,3:4,4:8,5:16,6:32,7:64,8:128,9:256}
@@ -7,11 +10,12 @@ class Sudoku:
         self.puzzle=matrix
         self.matrix=[]
         self.set_up_cells()
+        self.puzzle_transpose=np.array(matrix).T.tolist()
 
     def set_up_cells(self):
         for row in range(1,10):
             for cell in range(1,10):
-                cell_name=f"C{row}{cell}"
+                cell_name=f"C{row}x{cell}"
                 cell_name=Cell([],self.puzzle[row][cell],row,cell)
                 rowToAdd=[]
                 rowToAdd+=[cell_name]
@@ -25,13 +29,9 @@ class Sudoku:
                 return False
         
         # valid or not for columns
-        columns=[]
-        for column in range(1,10):
-            for row in self.puzzle:
-                columns+=[row[column]]
-            if columns!=self.ideal:
+        for row in self.puzzle_transpose:
+            if row!=self.ideal:
                 return False
-            columns=[]
         
         # valid or not for 3x3 (to be done)
 
@@ -40,6 +40,6 @@ class Cell:
 
     def __init__(self,notes,value,row,column):
         self.value=value
-        self.notes=notes
+        self.domain = notes
         self.row=row
         self.column=column

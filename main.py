@@ -3,9 +3,6 @@ import random
 
 class Sudoku:
 
-    dec_to_bin={1:1,2:2,3:4,4:8,5:16,6:32,7:64,8:128,9:256}
-    ideal=[1,2,3,4,5,6,7,8,9]
-
     def __init__(self,matrix):
         self.puzzle = matrix
         self.matrix = []
@@ -59,6 +56,18 @@ class Sudoku:
                 freq_dict = []
 
         return True
+    
+    
+    def compare_agents(self, agent2):
+        valid = [[0], []]
+        if self.intersection(self[0:3], agent2[0:3]) in valid:
+            if self.intersection(self[3:6], agent2[3:6]) in valid:
+                if self.intersection(self[6:9], agent2[6:9]) in valid:
+                    return True
+        return False
+
+    def intersection(lst1, lst2):
+        return list(set(lst1) & set(lst2))
 
 class Cell:
 

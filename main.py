@@ -7,10 +7,10 @@ class Sudoku:
     ideal=[1,2,3,4,5,6,7,8,9]
 
     def __init__(self,matrix):
-        self.puzzle=matrix
-        self.matrix=[]
-        self.set_up_cells()
-        self.puzzle_transpose=np.array(matrix).T.tolist()
+        self.puzzle = matrix
+        self.matrix = []
+        #self.set_up_cells()
+        self.puzzle_transpose = np.array(matrix).T.tolist()
 
     def set_up_cells(self):
         for row in range(1,10):
@@ -24,17 +24,41 @@ class Sudoku:
     def is_valid(self):
 
         # valid or not for rows
+        freq_dict = []
         for row in self.puzzle:
-            if row!=self.ideal:
-                return False
-        
+            for cell in row:
+                if cell != 0:    
+                    if cell in freq_dict:
+                        return False
+                freq_dict += [cell]
+            freq_dict = []      
+                
         # valid or not for columns
-        for row in self.puzzle_transpose:
-            if row!=self.ideal:
-                return False
+        freq_dict = []
+        for row in np.array(self.puzzle).T.tolist():
+            for cell in row:
+                if cell != 0:    
+                    if cell in freq_dict:
+                        return False
+                freq_dict += [cell]
+            freq_dict = [] 
         
         # valid or not for 3x3 (to be done)
+        splits = [self.puzzle[0:3], self.puzzle[3:6], self.puzzle[6:9]]
+        splits_verticle = [list(range(3)), list(range(3, 6)), list(range(6, 9))]
 
+        freq_dict = []
+        for i in range(3):
+            for column in splits_verticle:
+                for j in column:    
+                    for row in splits[i]:
+                        if row[j] != 0:
+                            if row[j] in freq_dict:
+                                return False
+                        freq_dict += [row[j]]
+                freq_dict = []
+
+        return True
 
 class Cell:
 
@@ -43,3 +67,5 @@ class Cell:
         self.domain = notes
         self.row=row
         self.column=column
+
+sudoku = []

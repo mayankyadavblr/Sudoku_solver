@@ -13,12 +13,11 @@ class Sudoku:
 
         print("set up done")
         return list_of_agents
-    
-    AllAgents = setup() #Potential problem with setup running multiple times
 
     def __init__(self,matrix):
         self.puzzle = matrix
         self.puzzle_transpose = np.array(matrix).T.tolist()
+        self.AllAgents = Sudoku.setup()
 
     def is_valid(self):
 
@@ -67,14 +66,17 @@ class Sudoku:
                     return True
         return False
 
-    def intersection(lst1, lst2):
+    def intersection(self, lst1, lst2):
         return list(set(lst1) & set(lst2))
     
 
 
 class Cell(Sudoku):
+
+
     
     Domain = list(itertools.permutations(list(range(1, 10))))
+    #AllAgents = setup() #Potential problem with setup running multiple times
 
     def __init__(self, pos, x, y):
         self.position = pos
@@ -88,8 +90,8 @@ class Cell(Sudoku):
 
     def send_receive_OK(self, pos, new_permutation, children):
         for agent in children:
-            Sudoku.AllAgents[agent].agent_view[pos] = new_permutation
-            Sudoku.AllAgents[agent].check_agent_view()
+            PUZZLE.AllAgents[agent].agent_view[pos] = new_permutation
+            PUZZLE.AllAgents[agent].check_agent_view()
 
     def send_receive_NoGood(self, receiver, inconsistent_set):
         receiver.NoGood += [inconsistent_set]
@@ -97,7 +99,7 @@ class Cell(Sudoku):
             
     def check_agent_view(self):
         def check_consistency(permutation):
-            for agent in self.agents[0: self.position]:
+            for agent in PUZZLE.AllAgents[0: self.position]:
                 if (self.coordinates[0] == agent.coordinates[0]) or (self.coordinates[1] == agent.coordinates[1]):
                     if not self.compare_agents(permutation, agent):
                         return False
@@ -118,11 +120,11 @@ class Cell(Sudoku):
 
     def backtrack(self, inconsistency):
         if inconsistency.isEmpty():
-            #terminate program
-            pass
+            print("No Solution, press ctrl+C")
+            quit()
         else:
             least_priority = max(self.agent_view.keys())
-            self.send_NoGood(Sudoku.AllAgents[least_priority], self.agent_view)
+            self.send_NoGood(PUZZLE.AllAgents[least_priority], self.agent_view)
             self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
             self.check_agent_view()
 
@@ -141,4 +143,32 @@ class Cell(Sudoku):
                     break
         print("culling domain done", self.position)
 
-PUZZLE = Sudoku()
+
+trial = [[0,0,0,6,8,0,1,9,0],[2,6,0,0,7,0,0,0,4],
+         [7,0,1,0,9,0,5,0,0],[8,2,0,0,0,4,0,5,0],
+         [1,0,0,6,0,2,0,0,3],[0,4,0,9,0,0,0,2,8],
+         [0,0,9,0,4,0,7,0,3],[3,0,0,0,5,0,0,1,8],
+         [0,7,4,0,3,6,0,0,0]]
+
+#board = input("Enter your sudoku puzzle: ")
+PUZZLE = Sudoku(trial)
+
+for cell in range(len(trial)):
+    PUZZLE.AllAgents[cell].permutation = trial[cell]
+
+def initialize_cells():
+    for agent in PUZZLE.AllAgents:
+        agent.permutation = agent.domain[0]
+    pass
+
+initialize_cells()
+
+solved = False
+while not solved:
+    for agent in PUZZLE.AllAgents:
+        agent.check_agent_view()
+    solved = PUZZLE.is_valid()
+
+if solved:
+    for agent in PUZZLE.AllAgents:
+        print(agent.permutation)

@@ -3,14 +3,22 @@ import random
 import itertools
 from ast import literal_eval
 
+def setup(self):
+    list_of_agents = []
+    for row in range(1, 4):
+        for column in range(1, 4):
+            list_of_agents += [Cell(len(list_of_agents), row, column)]
+
+    return list_of_agents
+
 class Sudoku:
+    
+    AllAgents = setup()
 
     def __init__(self,matrix):
         self.puzzle = matrix
         self.matrix = []
-        #self.set_up_cells()
         self.puzzle_transpose = np.array(matrix).T.tolist()
-        AllAgents = self.setup()
 
     def is_valid(self):
 
@@ -65,17 +73,13 @@ class Sudoku:
     def populate_agent(self):
         return random.choice(self.domain)
     
-    def setup(self):
-        list_of_agents = []
-        for row in range(1, 4):
-            for column in range(1, 4):
-                list_of_agents += [Cell(len(list_of_agents), row, column)]
 
-        return list_of_agents
 
         
 
 class Cell(Sudoku):
+    
+    Domain = list(itertools.permutations(list(range(1, 10))))
 
     def __init__(self, pos, x, y):
         self.position = pos
@@ -83,8 +87,7 @@ class Cell(Sudoku):
         self.agent_view = {}
         self.NoGood = []
         self.permutation = []
-        Domain = list(itertools.permutations(list(range(1, 10))))
-        self.domain = Domain + []
+        self.domain = Cell.Domain + []
         self.cull_domain()
 
 
@@ -110,11 +113,13 @@ class Cell(Sudoku):
             if not found:
                 self.backtrack()
 
-    def send_OK(self):
-        pass
+    def send_receive_OK(self, pos, new_permutation, children):
+        for agent in children:
+            Sudoku.AllAgents
 
-    def send_NoGood(self, receiver, inconsistent_set):
-        pass
+    def send_receive_NoGood(self, receiver, inconsistent_set):
+        receiver.NoGood += [inconsistent_set]
+        receiver.check_agent_view()
             
     def backtrack(self, inconsistency):
         if inconsistency.isEmpty():
@@ -122,7 +127,7 @@ class Cell(Sudoku):
             pass
         else:
             least_priority = max(self.agent_view.keys())
-            self.send_NoGood(self.AllAgents[least_priority], self.agent_view)
+            self.send_NoGood(Sudoku.AllAgents[least_priority], self.agent_view)
             self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
             self.check_agent_view()
 
@@ -135,7 +140,7 @@ class Cell(Sudoku):
             if i != 0:
                 pos_dict[i] = self.permutation.index(i)
 
-        for permutation in self.Domain:
+        for permutation in Cell.Domain:
             for key in pos_dict:
                 if permutation.index(key) != pos_dict[key]:
                     self.domain.remove(permutation)

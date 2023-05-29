@@ -1,23 +1,23 @@
 import numpy as np
-import random
 import itertools
-from ast import literal_eval
 
-def setup(self):
-    list_of_agents = []
-    for row in range(1, 4):
-        for column in range(1, 4):
-            list_of_agents += [Cell(len(list_of_agents), row, column)]
 
-    return list_of_agents
 
 class Sudoku:
+
+    def setup():
+        list_of_agents = []
+        for row in range(1, 4):
+            for column in range(1, 4):
+                list_of_agents += [Cell(len(list_of_agents), row, column)]
+
+        print("set up done")
+        return list_of_agents
     
-    AllAgents = setup()
+    AllAgents = setup() #Potential problem with setup running multiple times
 
     def __init__(self,matrix):
         self.puzzle = matrix
-        self.matrix = []
         self.puzzle_transpose = np.array(matrix).T.tolist()
 
     def is_valid(self):
@@ -70,12 +70,7 @@ class Sudoku:
     def intersection(lst1, lst2):
         return list(set(lst1) & set(lst2))
     
-    def populate_agent(self):
-        return random.choice(self.domain)
-    
 
-
-        
 
 class Cell(Sudoku):
     
@@ -91,10 +86,18 @@ class Cell(Sudoku):
         self.cull_domain()
 
 
+    def send_receive_OK(self, pos, new_permutation, children):
+        for agent in children:
+            Sudoku.AllAgents[agent].agent_view[pos] = new_permutation
+            Sudoku.AllAgents[agent].check_agent_view()
 
+    def send_receive_NoGood(self, receiver, inconsistent_set):
+        receiver.NoGood += [inconsistent_set]
+        receiver.check_agent_view()
+            
     def check_agent_view(self):
         def check_consistency(permutation):
-            for agent in self.agents[0: self.pos]:
+            for agent in self.agents[0: self.position]:
                 if (self.coordinates[0] == agent.coordinates[0]) or (self.coordinates[1] == agent.coordinates[1]):
                     if not self.compare_agents(permutation, agent):
                         return False
@@ -106,22 +109,13 @@ class Cell(Sudoku):
             for permutation in self.domain:
                 if permutation != self.permutation:
                     if check_consistency(permutation):
-                        self.send_receive_OK(self.pos, permutation, list(range(self.pos+1, 10)))
+                        self.send_receive_OK(self.position, permutation, list(range(self.position+1, 10)))
                         found = True
                         self.permutation = permutation
                         pass
             if not found:
                 self.backtrack()
 
-    def send_receive_OK(self, pos, new_permutation, children):
-        for agent in children:
-            Sudoku.AllAgents[agent].agent_view[pos] = new_permutation
-            Sudoku.AllAgents[agent].check_agent_view()
-
-    def send_receive_NoGood(self, receiver, inconsistent_set):
-        receiver.NoGood += [inconsistent_set]
-        receiver.check_agent_view()
-            
     def backtrack(self, inconsistency):
         if inconsistency.isEmpty():
             #terminate program
@@ -131,7 +125,6 @@ class Cell(Sudoku):
             self.send_NoGood(Sudoku.AllAgents[least_priority], self.agent_view)
             self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
             self.check_agent_view()
-
 
     
     def cull_domain(self):
@@ -146,5 +139,6 @@ class Cell(Sudoku):
                 if permutation.index(key) != pos_dict[key]:
                     self.domain.remove(permutation)
                     break
+        print("culling domain done", self.position)
 
 PUZZLE = Sudoku()

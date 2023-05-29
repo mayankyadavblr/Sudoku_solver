@@ -9,7 +9,7 @@ class Sudoku:
         list_of_agents = []
         for row in range(1, 4):
             for column in range(1, 4):
-                list_of_agents += [Cell(len(list_of_agents), row, column)]
+                list_of_agents += [Cell(len(list_of_agents), row, column, trial[len(list_of_agents)])]
 
         print("set up done")
         return list_of_agents
@@ -27,6 +27,7 @@ class Sudoku:
             for cell in row:
                 if cell != 0:    
                     if cell in freq_dict:
+                        print("False")
                         return False
                 freq_dict += [cell]
             freq_dict = []      
@@ -37,6 +38,7 @@ class Sudoku:
             for cell in row:
                 if cell != 0:    
                     if cell in freq_dict:
+                        print("False")
                         return False
                 freq_dict += [cell]
             freq_dict = [] 
@@ -52,10 +54,11 @@ class Sudoku:
                     for row in splits[i]:
                         if row[j] != 0:
                             if row[j] in freq_dict:
+                                print("False")
                                 return False
                         freq_dict += [row[j]]
                 freq_dict = []
-
+        print("True")
         return True
         
     def compare_agents(self, permutation, agent2):
@@ -78,17 +81,18 @@ class Cell(Sudoku):
     Domain = list(itertools.permutations(list(range(1, 10))))
     #AllAgents = setup() #Potential problem with setup running multiple times
 
-    def __init__(self, pos, x, y):
+    def __init__(self, pos, x, y, permutation_orig):
         self.position = pos
         self.coordinates = [x, y]
         self.agent_view = {}
         self.NoGood = []
-        self.permutation = []
+        self.permutation = permutation_orig
         self.domain = Cell.Domain + []
-        self.cull_domain()
+
 
 
     def send_receive_OK(self, pos, new_permutation, children):
+        #print(children)
         for agent in children:
             PUZZLE.AllAgents[agent].agent_view[pos] = new_permutation
             PUZZLE.AllAgents[agent].check_agent_view()
@@ -106,12 +110,13 @@ class Cell(Sudoku):
             return True
         
         if not check_consistency(self.permutation):
-            
+            print("not consistent", self.position)
             found = False
             for permutation in self.domain:
+                #print(permutation)
                 if permutation != self.permutation:
                     if check_consistency(permutation):
-                        self.send_receive_OK(self.position, permutation, list(range(self.position+1, 10)))
+                        self.send_receive_OK(self.position, permutation, list(range(self.position+1, 9)))
                         found = True
                         self.permutation = permutation
                         pass
@@ -136,12 +141,14 @@ class Cell(Sudoku):
             if i != 0:
                 pos_dict[i] = self.permutation.index(i)
 
+        print(pos_dict)
         for permutation in Cell.Domain:
             for key in pos_dict:
                 if permutation.index(key) != pos_dict[key]:
+                    #print(permutation)
                     self.domain.remove(permutation)
                     break
-        print("culling domain done", self.position)
+        print("culling domain done", self.position, len(self.domain))
 
 
 trial = [[0,0,0,6,8,0,1,9,0],[2,6,0,0,7,0,0,0,4],
@@ -159,14 +166,18 @@ for cell in range(len(trial)):
 def initialize_cells():
     for agent in PUZZLE.AllAgents:
         agent.permutation = agent.domain[0]
+
+        
     pass
 
 initialize_cells()
 
 solved = False
 while not solved:
+    print('here goes nothing')
     for agent in PUZZLE.AllAgents:
         agent.check_agent_view()
+        print('one agent complete')
     solved = PUZZLE.is_valid()
 
 if solved:

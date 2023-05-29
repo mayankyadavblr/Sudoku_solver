@@ -51,11 +51,11 @@ class Sudoku:
 
         return True
         
-    def compare_agents(self, agent2):
+    def compare_agents(self, permutation, agent2):
         valid = [[0], []]
-        if self.intersection(self[0:3], agent2[0:3]) in valid:
-            if self.intersection(self[3:6], agent2[3:6]) in valid:
-                if self.intersection(self[6:9], agent2[6:9]) in valid:
+        if self.intersection(permutation[0:3], agent2.permutation[0:3]) in valid:
+            if self.intersection(permutation[3:6], agent2.permutation[3:6]) in valid:
+                if self.intersection(permutation[6:9], agent2.permutation[6:9]) in valid:
                     return True
         return False
 
@@ -83,13 +83,47 @@ class Cell(Sudoku):
         self.agent_view = {}
         self.NoGood = []
         self.permutation = []
-        self.domain = list(itertools.permutations(list(range(1, 10))))
+        Domain = list(itertools.permutations(list(range(1, 10))))
+        self.domain = Domain + []
+        self.cull_domain()
+
+
 
     def check_agent_view(self):
-        for agent in self.agents[0: self.pos]:
-            pass
+        def check_consistency(permutation):
+            for agent in self.agents[0: self.pos]:
+                if (self.coordinates[0] == agent.coordinates[0]) or (self.coordinates[1] == agent.coordinates[1]):
+                    if not self.compare_agents(permutation, agent):
+                        return False
+            return True
+        
+        if not check_consistency(self.permutation):
+            
+            found = False
+            for permutation in self.domain:
+                if permutation != self.permutation:
+                    if check_consistency(permutation):
+                        self.send_OK()
+                        found = True
+                        self.permutation = permutation
+                        pass
+            if not found:
+                self.backtrack()
 
+    def send_OK(self):
+        pass
+            
     def backtrack(self):
         pass
+    
+    def cull_domain(self):
+        pos_dict = {}
+        for i in self.permutation:
+            if i != 0:
+                pos_dict[i] = self.permutation.index(i)
 
-
+        for permutation in self.Domain:
+            for key in pos_dict:
+                if permutation.index(key) != pos_dict[key]:
+                    self.domain.remove(permutation)
+                    break

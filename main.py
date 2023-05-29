@@ -106,7 +106,7 @@ class Cell(Sudoku):
             for permutation in self.domain:
                 if permutation != self.permutation:
                     if check_consistency(permutation):
-                        self.send_OK()
+                        self.send_receive_OK(self.pos, permutation, list(range(self.pos+1, 10)))
                         found = True
                         self.permutation = permutation
                         pass
@@ -115,7 +115,8 @@ class Cell(Sudoku):
 
     def send_receive_OK(self, pos, new_permutation, children):
         for agent in children:
-            Sudoku.AllAgents
+            Sudoku.AllAgents[agent].agent_view[pos] = new_permutation
+            Sudoku.AllAgents[agent].check_agent_view()
 
     def send_receive_NoGood(self, receiver, inconsistent_set):
         receiver.NoGood += [inconsistent_set]

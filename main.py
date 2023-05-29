@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+from queue import Queue
 
 
 
@@ -88,6 +89,7 @@ class Cell(Sudoku):
         self.NoGood = []
         self.permutation = permutation_orig
         self.domain = []
+        self.queue = Queue()
         self.advanced_cull_domain()
 
 

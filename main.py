@@ -10,7 +10,7 @@ class Sudoku:
         self.matrix = []
         #self.set_up_cells()
         self.puzzle_transpose = np.array(matrix).T.tolist()
-        self.agents = self.setup()
+        AllAgents = self.setup()
 
     def is_valid(self):
 
@@ -112,11 +112,24 @@ class Cell(Sudoku):
 
     def send_OK(self):
         pass
-            
-    def backtrack(self):
+
+    def send_NoGood(self, receiver, inconsistent_set):
         pass
+            
+    def backtrack(self, inconsistency):
+        if inconsistency.isEmpty():
+            #terminate program
+            pass
+        else:
+            least_priority = max(self.agent_view.keys())
+            self.send_NoGood(self.AllAgents[least_priority], self.agent_view)
+            self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
+            self.check_agent_view()
+
+
     
     def cull_domain(self):
+    
         pos_dict = {}
         for i in self.permutation:
             if i != 0:
@@ -127,3 +140,5 @@ class Cell(Sudoku):
                 if permutation.index(key) != pos_dict[key]:
                     self.domain.remove(permutation)
                     break
+
+PUZZLE = Sudoku()

@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import itertools
+from ast import literal_eval
 
 class Sudoku:
 
@@ -9,16 +10,7 @@ class Sudoku:
         self.matrix = []
         #self.set_up_cells()
         self.puzzle_transpose = np.array(matrix).T.tolist()
-        domain = list(itertools.permutations(list(range(9))))
-
-    def set_up_cells(self):
-        for row in range(1,10):
-            for cell in range(1,10):
-                cell_name=f"C{row}x{cell}"
-                cell_name=Cell([],self.puzzle[row][cell],row,cell)
-                rowToAdd=[]
-                rowToAdd+=[cell_name]
-            self.matrix+=[rowToAdd]
+        self.agents = self.setup()
 
     def is_valid(self):
 
@@ -73,14 +65,31 @@ class Sudoku:
     def populate_agent(self):
         return random.choice(self.domain)
     
+    def setup(self):
+        list_of_agents = []
+        for row in range(1, 4):
+            for column in range(1, 4):
+                list_of_agents += [Cell(len(list_of_agents), row, column)]
 
+        return list_of_agents
+
+        
 
 class Cell(Sudoku):
 
-    def __init__(self,notes,value,row,column):
-        self.value=value
-        self.domain = notes
-        self.row=row
-        self.column=column
+    def __init__(self, pos, x, y):
+        self.position = pos
+        self.coordinates = [x, y]
+        self.agent_view = {}
+        self.NoGood = []
+        self.permutation = []
+        self.domain = list(itertools.permutations(list(range(1, 10))))
 
-sudoku = []
+    def check_agent_view(self):
+        for agent in self.agents[0: self.pos]:
+            pass
+
+    def backtrack(self):
+        pass
+
+

@@ -87,12 +87,13 @@ class Cell(Sudoku):
         self.agent_view = {}
         self.NoGood = []
         self.permutation = permutation_orig
-        self.domain = Cell.Domain + []
+        self.domain = []
+        self.advanced_cull_domain()
 
 
 
     def send_receive_OK(self, pos, new_permutation, children):
-        #print(children)
+        print(self.position, children)
         for agent in children:
             PUZZLE.AllAgents[agent].agent_view[pos] = new_permutation
             PUZZLE.AllAgents[agent].check_agent_view()
@@ -110,7 +111,7 @@ class Cell(Sudoku):
             return True
         
         if not check_consistency(self.permutation):
-            print("not consistent", self.position)
+            #print("not consistent", self.position, self.agent_view)
             found = False
             for permutation in self.domain:
                 #print(permutation)
@@ -123,16 +124,36 @@ class Cell(Sudoku):
             if not found:
                 self.backtrack()
 
-    def backtrack(self, inconsistency):
+    def backtrack(self):
+        '''
         if inconsistency.isEmpty():
             print("No Solution, press ctrl+C")
             quit()
         else:
-            least_priority = max(self.agent_view.keys())
-            self.send_NoGood(PUZZLE.AllAgents[least_priority], self.agent_view)
-            self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
-            self.check_agent_view()
+        '''
+        least_priority = max(self.agent_view.keys())
+        self.send_receive_NoGood(PUZZLE.AllAgents[least_priority], self.agent_view)
+        self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
+        self.check_agent_view()
 
+    
+    def advanced_cull_domain(self):
+        pos_dict = {}
+        for i in self.permutation:
+            if i != 0:
+                pos_dict[i] = self.permutation.index(i)
+
+
+        present = set(self.permutation)
+        required = set([1, 2, 3, 4, 5, 6, 7, 8, 9]).difference(present)
+
+        for domain_point in list(itertools.permutations(required)):
+            domain_point = list(domain_point)
+            for key in pos_dict:
+                domain_point.insert(pos_dict[key], key)
+
+            self.domain += [domain_point]
+        print(pos_dict, len(self.domain))
     
     def cull_domain(self):
     
@@ -165,6 +186,7 @@ for cell in range(len(trial)):
 
 def initialize_cells():
     for agent in PUZZLE.AllAgents:
+        #agent.cull_domain()
         agent.permutation = agent.domain[0]
 
         
@@ -176,7 +198,12 @@ solved = False
 while not solved:
     print('here goes nothing')
     for agent in PUZZLE.AllAgents:
-        agent.check_agent_view()
+        #agent.check_agent_view()
+        try:
+            agent.send_receive_OK(agent.position, agent.permutation, list(range(agent.position+1, 9)))
+        except Exception as e:
+            print(e)
+            quit()
         print('one agent complete')
     solved = PUZZLE.is_valid()
 

@@ -138,6 +138,8 @@ class Cell(Sudoku):
         self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
         self.check_agent_view()
 
+    def queue_control(self):
+        pass
     
     def advanced_cull_domain(self):
         pos_dict = {}

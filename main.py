@@ -77,8 +77,6 @@ class Sudoku:
 
 class Cell(Sudoku):
 
-
-    
     Domain = list(itertools.permutations(list(range(1, 10))))
     #AllAgents = setup() #Potential problem with setup running multiple times
 
@@ -93,16 +91,19 @@ class Cell(Sudoku):
         self.advanced_cull_domain()
 
 
-
-    def send_receive_OK(self, pos, new_permutation, children):
+    def send_receive_OK(self, pos,  new_permutation):
+        self.agent_view[pos] = new_permutation
+        print(self.agent_view)
+        '''
         print(self.position, children)
         for agent in children:
             PUZZLE.AllAgents[agent].agent_view[pos] = new_permutation
-            PUZZLE.AllAgents[agent].check_agent_view()
+            #PUZZLE.AllAgents[agent].check_agent_view()
+        '''
 
-    def send_receive_NoGood(self, receiver, inconsistent_set):
-        receiver.NoGood += [inconsistent_set]
-        receiver.check_agent_view()
+    def send_receive_NoGood(self, inconsistent_set):
+        self.NoGood += [inconsistent_set]
+        #receiver.check_agent_view()
             
     def check_agent_view(self):
         def check_consistency(permutation):
@@ -111,18 +112,22 @@ class Cell(Sudoku):
                     if not self.compare_agents(permutation, agent):
                         return False
             return True
-        
-        if not check_consistency(self.permutation):
-            #print("not consistent", self.position, self.agent_view)
+        print(self.permutation)
+        if (not check_consistency(self.permutation)) or (0 in self.permutation):
+            print("not consistent", self.position, self.agent_view)
             found = False
             for permutation in self.domain:
-                #print(permutation)
-                if permutation != self.permutation:
-                    if check_consistency(permutation):
-                        self.send_receive_OK(self.position, permutation, list(range(self.position+1, 9)))
-                        found = True
-                        self.permutation = permutation
-                        pass
+                #if permutation != self.permutation:
+                if check_consistency(permutation):
+                    for agent in range(self.position+1, 9):
+                        PUZZLE.AllAgents[agent].queue.put([self.position, permutation, PUZZLE.AllAgents[agent], lambda x, y, z: z.send_receive_OK(x, y)])
+                    #self.send_receive_OK(self.position, permutation, list(range(self.position+1, 9)))
+                    found = True
+                    self.permutation = permutation
+                    print(permutation)
+                if found:
+                    break
+
             if not found:
                 self.backtrack()
 
@@ -134,13 +139,26 @@ class Cell(Sudoku):
         else:
         '''
         least_priority = max(self.agent_view.keys())
-        self.send_receive_NoGood(PUZZLE.AllAgents[least_priority], self.agent_view)
+
+        self.send_receive_NoGood(self.agent_view) # removed PUZZLE.AllAgents[least_priority],
+        PUZZLE.AllAgents[least_priority].queue.put([self.agent_view, lambda x: PUZZLE.AllAgents[least_priority].send_receive_NoGood(x)])
+
         self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
-        self.check_agent_view()
+        #self.check_agent_view()
+
 
     def queue_control(self):
-        pass
-    
+
+        while not self.queue.empty():
+            temp = self.queue.get()
+            if len(temp) == 4:
+                temp[3](temp[0], temp[1], temp[2])
+            elif len(temp) == 2:#RECHECK THIS
+                temp[1](temp[0])
+        print(self.agent_view)
+        self.check_agent_view()
+
+
     def advanced_cull_domain(self):
         pos_dict = {}
         for i in self.permutation:
@@ -192,25 +210,36 @@ def initialize_cells():
     for agent in PUZZLE.AllAgents:
         #agent.cull_domain()
         agent.permutation = agent.domain[0]
-
-        
     pass
 
-initialize_cells()
+#initialize_cells()
 
 solved = False
+cycle = 0
+
+
 while not solved:
     print('here goes nothing')
+    '''
     for agent in PUZZLE.AllAgents:
         #agent.check_agent_view()
         try:
-            agent.send_receive_OK(agent.position, agent.permutation, list(range(agent.position+1, 9)))
+            #agent.send_receive_OK(agent.position, agent.permutation, list(range(agent.position+1, 9)))
+            pass
         except Exception as e:
             print(e)
             quit()
         print('one agent complete')
     solved = PUZZLE.is_valid()
-
-if solved:
+    '''
     for agent in PUZZLE.AllAgents:
-        print(agent.permutation)
+        agent.queue_control()
+    
+    cycle += 1
+    print(cycle)
+    for agent in PUZZLE.AllAgents:
+        if not agent.queue.empty():
+            solved = False
+
+print('phew we done baby')
+

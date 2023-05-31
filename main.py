@@ -1,8 +1,8 @@
 import numpy as np
 import itertools
 from queue import Queue
-
-
+import time
+import traceback
 
 class Sudoku:
 
@@ -15,7 +15,7 @@ class Sudoku:
         print("set up done")
         return list_of_agents
 
-    def __init__(self,matrix):
+    def __init__(self, matrix):
         self.puzzle = matrix
         self.puzzle_transpose = np.array(matrix).T.tolist()
         self.AllAgents = Sudoku.setup()
@@ -64,9 +64,9 @@ class Sudoku:
         
     def compare_agents(self, permutation, agent2):
         valid = [[0], []]
-        if self.intersection(permutation[0:3], agent2.permutation[0:3]) in valid:
-            if self.intersection(permutation[3:6], agent2.permutation[3:6]) in valid:
-                if self.intersection(permutation[6:9], agent2.permutation[6:9]) in valid:
+        if self.intersection(permutation[0:3], agent2[0:3]) in valid:
+            if self.intersection(permutation[3:6], agent2[3:6]) in valid:
+                if self.intersection(permutation[6:9], agent2[6:9]) in valid:
                     return True
         return False
 
@@ -92,8 +92,9 @@ class Cell(Sudoku):
 
 
     def send_receive_OK(self, pos,  new_permutation):
+        
         self.agent_view[pos] = new_permutation
-        print(self.agent_view)
+        self.check_agent_view()
         '''
         print(self.position, children)
         for agent in children:
@@ -104,27 +105,32 @@ class Cell(Sudoku):
     def send_receive_NoGood(self, inconsistent_set):
         self.NoGood += [inconsistent_set]
         #receiver.check_agent_view()
+        self.check_agent_view()
             
     def check_agent_view(self):
         def check_consistency(permutation):
-            for agent in PUZZLE.AllAgents[0: self.position]:
-                if (self.coordinates[0] == agent.coordinates[0]) or (self.coordinates[1] == agent.coordinates[1]):
-                    if not self.compare_agents(permutation, agent):
+            for agent in self.agent_view.keys():
+                if (self.coordinates[0] == PUZZLE.AllAgents[agent].coordinates[0]) or (self.coordinates[1] == PUZZLE.AllAgents[agent].coordinates[1]):
+                    if not self.compare_agents(permutation, self.agent_view[agent]):
                         return False
             return True
-        print(self.permutation)
+
         if (not check_consistency(self.permutation)) or (0 in self.permutation):
-            print("not consistent", self.position, self.agent_view)
+
             found = False
             for permutation in self.domain:
-                #if permutation != self.permutation:
-                if check_consistency(permutation):
-                    for agent in range(self.position+1, 9):
-                        PUZZLE.AllAgents[agent].queue.put([self.position, permutation, PUZZLE.AllAgents[agent], lambda x, y, z: z.send_receive_OK(x, y)])
-                    #self.send_receive_OK(self.position, permutation, list(range(self.position+1, 9)))
-                    found = True
-                    self.permutation = permutation
-                    print(permutation)
+
+                if permutation != self.permutation:
+
+                    if check_consistency(permutation):
+
+                        for agent in range(self.position+1, 9):
+                            PUZZLE.AllAgents[agent].queue.put([self.position, permutation, PUZZLE.AllAgents[agent], lambda x, y, z: z.send_receive_OK(x, y)])
+                        
+                        #self.send_receive_OK(self.position, permutation, list(range(self.position+1, 9)))
+                        found = True
+                        self.permutation = permutation
+
                 if found:
                     break
 
@@ -138,25 +144,33 @@ class Cell(Sudoku):
             quit()
         else:
         '''
-        least_priority = max(self.agent_view.keys())
-
-        self.send_receive_NoGood(self.agent_view) # removed PUZZLE.AllAgents[least_priority],
+        iterable = list(self.agent_view.keys()).copy()
+        iterable.sort(reverse=True)
+        for agent in iterable:
+                if (self.coordinates[0] == PUZZLE.AllAgents[agent].coordinates[0]) or (self.coordinates[1] == PUZZLE.AllAgents[agent].coordinates[1]):
+                    if not self.compare_agents(self.permutation, self.agent_view[agent]):
+                        break
+        #least_priority = max(self.agent_view.keys())
+        least_priority = agent
+        #self.send_receive_NoGood(self.agent_view) # removed PUZZLE.AllAgents[least_priority],
         PUZZLE.AllAgents[least_priority].queue.put([self.agent_view, lambda x: PUZZLE.AllAgents[least_priority].send_receive_NoGood(x)])
 
-        self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
-        #self.check_agent_view()
+        #self.agent_view[least_priority] = PUZZLE.puzzle[least_priority]
+        self.agent_view.pop(least_priority)
+        self.check_agent_view()
 
 
     def queue_control(self):
-
+        print(self.agent_view)
         while not self.queue.empty():
             temp = self.queue.get()
             if len(temp) == 4:
                 temp[3](temp[0], temp[1], temp[2])
             elif len(temp) == 2:#RECHECK THIS
                 temp[1](temp[0])
-        print(self.agent_view)
+        #print(self.agent_view)
         self.check_agent_view()
+        print(self.permutation, self.position)
 
 
     def advanced_cull_domain(self):
@@ -175,7 +189,7 @@ class Cell(Sudoku):
                 domain_point.insert(pos_dict[key], key)
 
             self.domain += [domain_point]
-        print(pos_dict, len(self.domain))
+        #print(pos_dict, len(self.domain))
     
     def cull_domain(self):
     
@@ -202,7 +216,7 @@ trial = [[0,0,0,6,8,0,1,9,0],[2,6,0,0,7,0,0,0,4],
 
 #board = input("Enter your sudoku puzzle: ")
 PUZZLE = Sudoku(trial)
-
+print(PUZZLE.compare_agents([1,4,3,9,5,6,7,2,8],[1,0,0,6,0,2,0,0,3]), PUZZLE.AllAgents[5].domain[0])
 for cell in range(len(trial)):
     PUZZLE.AllAgents[cell].permutation = trial[cell]
 
@@ -210,9 +224,11 @@ def initialize_cells():
     for agent in PUZZLE.AllAgents:
         #agent.cull_domain()
         agent.permutation = agent.domain[0]
+        for agent1 in range(agent.position+1, 9):
+            PUZZLE.AllAgents[agent1].queue.put([agent.position, agent.permutation, PUZZLE.AllAgents[agent1], lambda x, y, z: z.send_receive_OK(x, y)])
     pass
 
-#initialize_cells()
+initialize_cells()
 
 solved = False
 cycle = 0
@@ -232,14 +248,18 @@ while not solved:
         print('one agent complete')
     solved = PUZZLE.is_valid()
     '''
-    for agent in PUZZLE.AllAgents:
-        agent.queue_control()
-    
+    try:
+        for agent in PUZZLE.AllAgents:
+            agent.queue_control()
+    except Exception as e:
+        print(e, agent.position)
+        quit()
+
     cycle += 1
     print(cycle)
     for agent in PUZZLE.AllAgents:
         if not agent.queue.empty():
             solved = False
-
+    time.sleep(1)
 print('phew we done baby')
 

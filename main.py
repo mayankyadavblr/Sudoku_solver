@@ -140,6 +140,7 @@ class Cell(Sudoku):
 
     def queue_control(self):
         pass
+        print('hola')
     
     def advanced_cull_domain(self):
         pos_dict = {}
